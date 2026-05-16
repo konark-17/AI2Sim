@@ -98,7 +98,8 @@
     position: relative;
     overflow: hidden;
     border-radius: 12px;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5), var(--shadow-lg), 0 0 10px rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   canvas {

@@ -40,7 +40,7 @@
     border-left: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-md);
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
     z-index: 10;
   }
 

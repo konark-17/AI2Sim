@@ -69,8 +69,10 @@
 
   .top-bar {
     height: 60px;
-    background-color: var(--bg-secondary);
+    background-color: rgba(26, 26, 36, 0.85);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
     padding: 0 24px;
@@ -88,6 +90,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
   }
 
   .content-area {
