@@ -2,20 +2,13 @@
   import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
+  export let isGenerating = false;
   let prompt = "";
-  let isGenerating = false;
 
   function handleSubmit() {
     if (!prompt.trim() || isGenerating) return;
-    
-    isGenerating = true;
     dispatch('submit', { prompt });
-    
-    // Simulate generation time
-    setTimeout(() => {
-      isGenerating = false;
-      prompt = "";
-    }, 1500);
+    prompt = "";
   }
 
   function handleKeyDown(e) {
@@ -141,4 +134,4 @@
     70% { box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
     100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
   }
-</style
+</style>

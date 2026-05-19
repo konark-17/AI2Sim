@@ -1,21 +1,40 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate } from 'svelte';
 
   export let parameters = {};
-  export let simulationCode = ""; // In the future, this would be generated code
+  export let simulationCode = "";
   
   let canvas;
   let ctx;
   let animationFrameId;
-  let particles = [];
+  let simulationFn = null;
+  let lastTime = 0;
 
-  // Mock simulation: a particle system
-  function initSimulation() {
-    if (!canvas) return;
-    ctx = canvas.getContext('2d');
-    resize();
-    createParticles();
-    animate();
+  // Build a simulation function from the received code string
+  function buildSimulationFn(code) {
+    if (!code) return null;
+    
+    try {
+      // The code is a function body that receives (ctx, canvas, parameters, deltaTime)
+      return new Function('ctx', 'canvas', 'parameters', 'deltaTime', code);
+    } catch (e) {
+      console.error("Failed to compile simulation code:", e);
+      return null;
+    }
+  }
+
+  // Re-compile when simulationCode changes
+  $: if (simulationCode) {
+    // Reset persistent state for the new simulation
+    window.simState = null;
+    simulationFn = buildSimulationFn(simulationCode);
+    
+    if (simulationFn && canvas) {
+      lastTime = performance.now();
+      // Restart animation loop
+      cancelAnimationFrame(animationFrameId);
+      animate(performance.now());
+    }
   }
 
   function resize() {
@@ -25,52 +44,27 @@
     }
   }
 
-  function createParticles() {
-    particles = [];
-    const count = parameters.count || 50;
-    for (let i = 0; i < count; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
-        radius: Math.random() * 3 + 1,
-        color: `hsl(${Math.random() * 360}, 70%, 60%)`
-      });
-    }
-  }
-
-  function animate() {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  function animate(timestamp) {
+    if (!ctx || !simulationFn) return;
     
-    const speedMultiplier = parameters.speed || 1;
-    const sizeMultiplier = parameters.size || 1;
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
 
-    // React to count changes
-    if (particles.length !== (parameters.count || 50)) {
-        createParticles();
+    try {
+      simulationFn(ctx, canvas, parameters, deltaTime);
+    } catch (e) {
+      console.error("Simulation runtime error:", e);
+      // Don't kill the loop — the user might adjust parameters to fix it
     }
-
-    particles.forEach(p => {
-      p.x += p.vx * speedMultiplier;
-      p.y += p.vy * speedMultiplier;
-
-      // Bounce off walls
-      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * sizeMultiplier, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.fill();
-    });
 
     animationFrameId = requestAnimationFrame(animate);
   }
 
   onMount(() => {
-    initSimulation();
+    if (canvas) {
+      ctx = canvas.getContext('2d');
+      resize();
+    }
     window.addEventListener('resize', resize);
     return () => {
       window.removeEventListener('resize', resize);
@@ -85,9 +79,9 @@
       <div class="icon">✨</div>
       <p>Enter a prompt below to generate a simulation</p>
     </div>
-  {:else}
-    <canvas bind:this={canvas}></canvas>
   {/if}
+  <!-- Canvas is always present but hidden when no simulation -->
+  <canvas bind:this={canvas} class:hidden={!simulationCode}></canvas>
 </div>
 
 <style>
@@ -106,6 +100,10 @@
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  canvas.hidden {
+    display: none;
   }
 
   .placeholder {

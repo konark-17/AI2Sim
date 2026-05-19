@@ -1,0 +1,16 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+ai2sim-backend
+
+# Test binary
+*.test
+
+# Go workspace
+go.work
+
+# Environment variables
+.env
