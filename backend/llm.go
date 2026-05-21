@@ -29,7 +29,7 @@ func NewLLMService(apiKey string) (*LLMService, error) {
 
 	return &LLMService{
 		client: client,
-		model:  "gemini-2.0-flash",
+		model:  "gemini-2.5-flash",
 	}, nil
 }
 
