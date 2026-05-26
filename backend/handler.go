@@ -62,3 +62,9 @@ func (h *Handler) GenerateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 }
+
+// writeError sends a JSON error response.
+func writeError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(ErrorResponse{Error: message})
