@@ -1,0 +1,14 @@
+I want to develop an application named AI2Sim :
+Functions :
+	Generate simulations on the basis of the prompt given allowing variable parameters for better research experience
+Frontend :
+	A dedicated section for parameter slider using CSS svelte.
+	And remaining thing with simulation showing part using HTML5.
+	Make it in Dark theme.
+Backend  :
+	I want to develop backend in golang due to its concurrency property.
+	I want to run the llm part on the ollama.
+Wanna Run it on the vercel.
+Suggest anything if you think it want work and anything if it will help make the project optimize or something
+
+

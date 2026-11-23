@@ -1,0 +1,37 @@
+# fly.toml — AI2Sim backend on Fly.io
+# Deploy with: fly deploy
+
+app = "ai2sim-backend"
+primary_region = "sin"  # Singapore — change to nearest: ams, cdg, fra, lax, ord, syd
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https   = true
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type       = "requests"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  size   = "performance-2x"  # 2 vCPU / 4GB RAM — minimum for 7B model
+  memory = "8gb"
+
+[env]
+  PORT         = "8080"
+  OLLAMA_MODEL = "qwen2.5-coder:7b"
+  # ALLOWED_ORIGINS set in fly secrets: fly secrets set ALLOWED_ORIGINS="https://your-app.vercel.app"
+
+[mounts]
+  source      = "ollama_models"
+  destination = "/root/.ollama"
+  initial_size = "30gb"  # qwen2.5-coder:7b ≈ 4.7GB
+
+[[statics]]
+  # No static files from Go server

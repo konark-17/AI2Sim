@@ -1,0 +1,32 @@
+# Go
+backend/ai2sim-server
+backend/ai2sim-server.exe
+backend/*.exe
+*.exe
+
+# Svelte / Node
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.vercel/
+frontend/.env.local
+frontend/.env.production
+
+# Secrets & Environment files
+*.env
+*.env.*
+!*.env.example
+backend/.env
+frontend/.env
+
+# Ollama models
+.ollama/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

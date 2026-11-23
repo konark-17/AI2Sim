@@ -1,208 +1,200 @@
-<div align="center">
+# ⚛ AI2Sim
 
-# ✨ AI2Sim
-
-**Turn natural language into interactive simulations — instantly.**
-
-[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)](https://svelte.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
-[![Gemini](https://img.shields.io/badge/Gemini-2.0_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-
-*Describe a simulation in plain English. Watch it come to life on a canvas. Tweak it in real-time with auto-generated controls.*
+> **AI-Powered Scientific Simulation Generator**
+> Describe any physical, mathematical, biological, or chemical system in plain English — AI2Sim generates an interactive, animated simulation in seconds.
 
 ---
 
-</div>
+## 🚀 Features
 
-## 🎯 What is AI2Sim?
-
-AI2Sim is a full-stack web application that bridges the gap between **imagination and simulation**. Type a prompt like *"A solar system with orbiting planets"* or *"A flock of birds with swarming behavior"*, and AI2Sim will:
-
-1. 🧠 Send your prompt to **Google Gemini** (LLM)
-2. ⚡ Generate real, executable **JavaScript Canvas 2D** simulation code
-3. 🎨 Render it live on an **HTML5 Canvas** with smooth 60fps animation
-4. 🎛️ Auto-generate **parameter sliders** so you can tweak physics, visuals, and behavior in real-time
-
-No coding required. Just describe, generate, and explore.
+- **Natural Language Prompts** — Describe any simulation (e.g. "double pendulum with adjustable gravity")
+- **AI-Generated Canvas Code** — `qwen2.5-coder:7b` generates self-contained JavaScript that runs on HTML5 Canvas
+- **Live Parameter Sliders** — Auto-inferred sliders for every variable parameter, update the simulation in real-time
+- **SSE Streaming** — See the simulation start rendering as the code generates token-by-token
+- **Sandboxed Execution** — LLM code runs in an isolated `<iframe>` for security
+- **LRU Cache** — Identical prompts are served from cache instantly (no re-inference)
+- **Dark Theme** — Premium glassmorphism UI with brand gradients
 
 ---
 
-## 🏗️ Architecture
+## 🏗 Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Browser (Svelte 5)                │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ PromptBar│  │  Simulation  │  │  Parameter    │  │
-│  │          │──│  Viewport    │──│  Panel        │  │
-│  │          │  │  (Canvas 2D) │  │  (Auto-gen)   │  │
-│  └────┬─────┘  └──────────────┘  └───────────────┘  │
-│       │            ▲                                │
-│       │ POST /api/generate                          │
-│       ▼            │                                │
-│  ┌─────────────────┴───────────────────────────┐    │
-│  │         Vite Dev Proxy (/api → :8080)       │    │
-│  └─────────────────┬───────────────────────────┘    │
-└────────────────────┼────────────────────────────────┘
-                     │
-                     ▼
-┌────────────────────────────────────────────────────┐
-│              Go Backend (:8080)                    │
-│  ┌────────────┐  ┌───────────┐  ┌──────────────┐  │
-│  │ Middleware  │  │  Handler  │  │  LLM Service │  │
-│  │ CORS+Logs  │──│ /api/*    │──│  (Gemini SDK)│  │
-│  └────────────┘  └───────────┘  └──────┬───────┘  │
-└─────────────────────────────────────────┼──────────┘
-                                          │
-                                          ▼
-                                ┌──────────────────┐
-                                │  Google Gemini   │
-                                │  2.0 Flash API   │
-                                └──────────────────┘
+┌─────────────────────────┐        ┌─────────────────────────────────┐
+│   Vercel (Frontend)      │        │   Fly.io (Backend + Ollama)      │
+│                         │  HTTPS │                                  │
+│   SvelteKit + Svelte 5  │◄──────►│   Go + Fiber v2                  │
+│   ├── Prompt Panel      │  SSE   │   ├── /api/v1/parameters         │
+│   ├── Parameter Sliders │        │   ├── /api/v1/simulate (SSE)     │
+│   └── Canvas Renderer   │        │   └── Concurrency limiter        │
+└─────────────────────────┘        │                                  │
+                                   │   Ollama (localhost:11434)       │
+                                   │   └── qwen2.5-coder:7b           │
+                                   └─────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Quick Start
+## 📁 Project Structure
+
+```
+AI2Sim/
+├── frontend/                   # SvelteKit app (→ Vercel)
+│   ├── src/
+│   │   ├── routes/+page.svelte     # Main 3-panel layout
+│   │   ├── lib/
+│   │   │   ├── components/
+│   │   │   │   ├── PromptPanel.svelte       # Prompt input + SSE handler
+│   │   │   │   ├── SimulationCanvas.svelte  # Sandboxed iframe renderer
+│   │   │   │   ├── ControlSidebar.svelte    # Sliders + playback controls
+│   │   │   │   └── ParameterSlider.svelte   # Single slider component
+│   │   │   ├── stores/simulation.ts         # Svelte state management
+│   │   │   └── api.ts                       # Backend API client
+│   │   └── app.css              # Dark theme design system
+│   └── .env                    # VITE_API_URL=http://localhost:8080
+│
+├── backend/                    # Go server (→ Fly.io)
+│   ├── cmd/server/main.go          # Entry point
+│   ├── internal/
+│   │   ├── api/handlers.go         # REST + SSE handlers
+│   │   ├── llm/
+│   │   │   ├── ollama.go           # Ollama HTTP API client
+│   │   │   └── prompt_builder.go   # Prompt engineering + param schemas
+│   │   └── middleware/limiter.go   # Concurrency gate middleware
+│   ├── Dockerfile              # Multi-stage: Go + Ollama
+│   ├── docker-entrypoint.sh    # Start Ollama, pull model, start server
+│   └── fly.toml                # Fly.io deployment config
+│
+└── docker-compose.yml          # Local dev: Ollama + backend together
+```
+
+---
+
+## 🛠 Local Development
 
 ### Prerequisites
-
 - [Go 1.24+](https://go.dev/dl/)
-- [Node.js 18+](https://nodejs.org/)
-- [Gemini API Key](https://aistudio.google.com/apikey) (free)
+- [Node.js 20+](https://nodejs.org/)
+- [Ollama](https://ollama.com/) installed and running
+- [Docker](https://docker.com/) (optional, for docker-compose approach)
 
-### 1. Clone the repo
+### Option A: Direct (no Docker)
 
+**1. Pull the LLM model:**
 ```bash
-git clone https://github.com/konark-17/AI2Sim.git
-cd AI2Sim
+ollama pull qwen2.5-coder:7b
 ```
 
-### 2. Start the Go backend
-
+**2. Start the Go backend:**
 ```bash
-# Set your Gemini API key
-# Linux/macOS:
-export GEMINI_API_KEY="your-api-key-here"
-# Windows (PowerShell):
-$env:GEMINI_API_KEY = "your-api-key-here"
-
 cd backend
-go run .
+go run ./cmd/server
+# Server starts on http://localhost:8080
 ```
 
-> The backend starts on `http://localhost:8080`
-
-### 3. Start the frontend (new terminal)
-
+**3. Start the SvelteKit frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
+# Opens http://localhost:5173
 ```
 
-> The frontend starts on `http://localhost:5173`
+### Option B: Docker Compose
 
-### 4. Open and explore!
-
-Navigate to **http://localhost:5173** and try prompts like:
-
-| Prompt | What you get |
-|--------|-------------|
-| *"A particle system with gravity and wind"* | Particles falling with adjustable gravity, wind, and count |
-| *"A bouncing ball simulation"* | Ball physics with elasticity, speed, and size controls |
-| *"Conway's Game of Life"* | Cellular automaton with grid size and speed sliders |
-| *"A starfield flying through space"* | 3D star effect with speed, density, and color controls |
-| *"A wave interference pattern"* | Overlapping sine waves with frequency and amplitude |
-
----
-
-## 📂 Project Structure
-
+```bash
+# From project root — pulls the model and starts everything
+docker compose up
 ```
-AI2Sim/
-├── backend/                  # Go HTTP server
-│   ├── main.go               # Entry point — server setup & routing
-│   ├── handler.go            # HTTP handlers (POST /api/generate, GET /api/health)
-│   ├── llm.go                # Gemini SDK integration & system prompt
-│   ├── middleware.go          # CORS & request logging
-│   ├── types.go              # Shared request/response types
-│   ├── go.mod
-│   └── go.sum
-│
-├── frontend/                 # Svelte 5 + Vite SPA
-│   ├── src/
-│   │   ├── App.svelte                  # Root layout + API orchestration
-│   │   ├── app.css                     # Global design tokens & theme
-│   │   ├── main.js                     # Svelte mount
-│   │   └── lib/
-│   │       ├── SimulationViewport.svelte  # Canvas + dynamic code executor
-│   │       ├── PromptBar.svelte           # Input bar with loading states
-│   │       └── ParameterPanel.svelte      # Auto-generated slider panel
-│   ├── vite.config.js         # Vite config with API proxy
-│   ├── index.html
-│   └── package.json
-└── README.md
+Frontend dev server still runs locally:
+```bash
+cd frontend && npm run dev
 ```
 
 ---
 
-## 🔌 API Reference
+## 🚀 Deployment
 
-### `POST /api/generate`
+### Frontend → Vercel
 
-Generate a simulation from a natural language prompt.
+```bash
+cd frontend
+npm install -g vercel
+vercel login
+vercel deploy --prod
 
-**Request:**
-```json
-{
-  "prompt": "A particle system with gravity"
-}
+# Set your backend URL as an env variable in Vercel dashboard:
+# VITE_API_URL = https://ai2sim-backend.fly.dev
 ```
 
-**Response:**
-```json
-{
-  "code": "ctx.clearRect(0, 0, canvas.width, canvas.height); ...",
-  "parameterDefs": [
-    { "name": "gravity", "label": "Gravity", "min": 0.1, "max": 10, "step": 0.1 },
-    { "name": "particleCount", "label": "Particle Count", "min": 10, "max": 500, "step": 1 }
-  ],
-  "defaults": {
-    "gravity": 1.0,
-    "particleCount": 100
-  }
-}
+### Backend → Fly.io
+
+```bash
+cd backend
+
+# Install Fly CLI: https://fly.io/docs/hands-on/install-flyctl/
+fly auth login
+
+# Create the app (first time only)
+fly launch --no-deploy
+
+# Create persistent volume for Ollama models
+fly volumes create ollama_models --size 30 --region sin
+
+# Set CORS to allow your Vercel domain
+fly secrets set ALLOWED_ORIGINS="https://your-app.vercel.app"
+
+# Deploy
+fly deploy
 ```
 
-### `GET /api/health`
-
-Health check endpoint.
-
-**Response:**
-```json
-{ "status": "ok", "service": "ai2sim-backend" }
-```
+> **Note:** First deployment will pull `qwen2.5-coder:7b` (~4.7 GB) — this takes ~5-10 minutes. Subsequent deploys are fast.
 
 ---
 
-## 🛠️ Tech Stack
+## 🔧 Configuration
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | Svelte 5 | Reactive UI components |
-| **Bundler** | Vite 8 | Dev server + HMR + API proxy |
-| **Backend** | Go 1.24 | HTTP server (stdlib `net/http`) |
-| **AI/LLM** | Google Gemini 2.0 Flash | Code generation from prompts |
-| **Rendering** | HTML5 Canvas 2D | Real-time simulation display |
+### Backend Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8080` | HTTP server port |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama API endpoint |
+| `OLLAMA_MODEL` | `qwen2.5-coder:7b` | Model to use for code generation |
+| `ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated CORS origins |
+
+### Frontend Environment Variables (`.env`)
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8080` | Go backend base URL |
 
 ---
 
-## 🔮 Future Ideas
+## 🧠 Supported Simulation Types
 
-- 🗄️ **Simulation history** — Save and revisit past generations
-- 🔗 **Shareable links** — Share simulations via URL
-- 🧪 **WebGL support** — 3D simulations with Three.js
-- 📱 **Mobile responsive** — Touch controls for parameters
-- 🎨 **Prompt gallery** — Pre-built community prompts
+| Type | Examples |
+|---|---|
+| **Physics** | Double pendulum, N-body gravity, projectile motion, wave interference |
+| **Math & Chaos** | Mandelbrot/Julia sets, Lorenz attractor, Fourier series |
+| **Biology** | Boid flocking, predator-prey, cellular automata, Conway's Life |
+| **Chemistry** | Gray-Scott reaction diffusion, Brownian motion, ideal gas molecules |
+
+---
+
+## 🔑 Key Technical Decisions
+
+| Decision | Rationale |
+|---|---|
+| Sandboxed `<iframe>` for JS | LLM-generated code could be malicious; iframe `sandbox="allow-scripts"` isolates it completely |
+| SSE over WebSocket | Unidirectional streaming is simpler, works behind all proxies/CDNs |
+| Ollama HTTP API (not Go SDK) | SDK requires Go 1.26; direct HTTP calls work with Go 1.24 and have zero extra deps |
+| LRU cache in Go | Identical prompt+params = instant replay, no wasted inference |
+| Semaphore concurrency limiter | Prevents server OOM from too many parallel 7B model inferences |
+| Model warm-up on startup | Eliminates 10-15 second first-request cold start |
+
+---
+
+## 📄 License
+
+MIT
